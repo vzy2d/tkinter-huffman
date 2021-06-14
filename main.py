@@ -76,7 +76,7 @@ def bin2hexa(binVal):
 
 
 class Application(Frame):
-    """ L'application graphique s'appuie sur le module Tkinter. """
+    """ GUI based-on Tkinter. """
 
     def __init__(self, master=None):
         
@@ -100,7 +100,7 @@ class Application(Frame):
 
         # widget text
         self.text = Text(master, width=50, height=10)
-        self.text.insert(END, "Ecrivez ici le texte a compresser. Uniquement des caracteres ascii !")
+        self.text.insert(END, "ascii only!")
         self.text.grid(row=2, padx=10, pady=10)
 
         Button(master, text='Compresser le texte', command=self.compute_and_display).grid(row=3)
@@ -147,7 +147,7 @@ class Application(Frame):
         # Conversion de chaque caractere du texte entre par l'utilisateur vers son code de Huffamn (texte binaire)
         ##################################
 
-        self.label_for_binary_text      = Label( master, width = 50, text = 'Texte encode selon Huffman')
+        self.label_for_binary_text      = Label( master, width = 50, text = 'Text encode by Huffman')
         self.label_for_binary_text.grid(row=4, column=1, pady=(25,10)) 
 
         self.text_binary = Text(master, width=50, height=10)
@@ -160,7 +160,7 @@ class Application(Frame):
         # Conversion du texte du panel sud est (texte binaire) en hexastring pour constater la compression en espace
         ##################################
 
-        self.label_for_compressed_text  = Label( master, width = 50, text = 'Texte compresse')
+        self.label_for_compressed_text  = Label( master, width = 50, text = 'Text compresse')
         self.label_for_compressed_text.grid(row=4, column=0, pady=(25,10))
 
         self.text_compressed = Text(master, width=50, height=10)
@@ -178,7 +178,7 @@ class Application(Frame):
         
         if text:
 
-            self.label_for_text.config(text='Texte original en ASCII: {} octets'.format(len(text)))  
+            self.label_for_text.config(text='Texte original in ASCII: {} Bytes'.format(len(text)))  
             
             matrix = text2tree(text)
             huffman = {}
@@ -196,7 +196,7 @@ class Application(Frame):
             # mise a jour de l'affichage du panel sud ouest avec le texte encode selon Huffamen et son label indiquant le nombre de caractere 
             
             self.text_binary.insert(END, ''.join([ huffman[char] for char in text]))
-            self.label_for_binary_text.config(text='Texte encode selon Huffman: {} bits'.format(len(self.text_binary.get(1.0, 'end-1c'))))
+            self.label_for_binary_text.config(text='Text encoded by Huffman: {} bits'.format(len(self.text_binary.get(1.0, 'end-1c'))))
             
 
             # surlignage des 2 premiers caracteres de Huffman pour aider a la comprehension de l'utilisateur
@@ -218,20 +218,20 @@ class Application(Frame):
 
         else:
             # il a ete constate que certaines plateformes ne supportent pas les caracteres speciaux dans le champs texte !
-            messagebox.showerror('Erreur', 'Le texte a compresser ne peut etre vide ou contenir des caracteres speciaux')
-            self.text.insert(END, "Ecrivez ici le texte a compresser. Uniquement des caracteres ascii !")
+            messagebox.showerror('Error', '要压缩的文本不能为空或包含特殊字符')
+            self.text.insert(END, "仅支持ascii字符！")
 
 
 
-# le module tkinter est utilise pour la realisation de l'interface graphique
+# tkinter 模块用于实现图形界面
 root = Tk()
-# mise en forme de la fenetre principale
+# 格式化主窗口
 root.config(bd=10)
 root.option_add("*Font", "courier")
 root.wm_title('Huffman')
 root.minsize(width=666, height=600)
 root.resizable(width=False, height=False)
 
-# lancement de l'interface graprightque
+# 推出graprightque界面
 app = Application(master=root)
 app.mainloop()
