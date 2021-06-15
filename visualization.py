@@ -5,8 +5,8 @@ import os
 window = tk.Tk()
 window.title("Huffman Tree Visualization")
 window.geometry('1080x720')
-sb = tk.Scrollbar(window)
-canvas = tk.Canvas(window, bg="white", height=500, width=300, yscrollcommand=sb.set)
+
+canvas = tk.Canvas(window, bg="white", height=500, width=300)
 input_entry = tk.Entry(window, bd=2, font="Constaintia", width=30)
 
 

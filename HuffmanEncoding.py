@@ -1,7 +1,4 @@
-from tkinter import *
-from tkinter import ttk
-from tkinter import messagebox
-
+# -*- coding: utf-8 -*-
 from heapq import heappush, heappop, heapify
 import collections
 
@@ -10,7 +7,7 @@ def get_new_text(node):
     if len(node) > 2:
         for i in range(1, len(node)):
             new_text += node[i][0]
-        return "".join(new_text)
+        return "".join(sorted(new_text))
     else:
         return node[1][0]
 
@@ -49,8 +46,7 @@ def huffman_encoding(symb2freq):
         # next_node_b
         left_text = get_new_text(left)
         right_text = get_new_text(right)
-        new_text = sorted(left_text + right_text)
-        new_text = "".join(new_text)
+        new_text = "".join(sorted(left_text + right_text))
         layers.append({new_text : [0, left[0]+right[0], \
                 [text_dict[left_text],  left_text], \
                 [text_dict[right_text], right_text]]})
@@ -66,7 +62,7 @@ def huffman_encoding(symb2freq):
         heappush( heap, [ left[0] + right[0] ] + left[1:] + right[1:] )
         print(heap,'\n')
     print(layers, len(layers))
-    return sorted(heappop(heap)[1:], key=lambda p: (len(p[-1]), p))
+    return sorted(heappop(heap)[1:], key=lambda p: (len(p[-1]), p)), layers
 
 
 def text2tree(txt):
@@ -75,16 +71,18 @@ def text2tree(txt):
     """
     
     symb2freq = collections.Counter(txt)
-    huff = huffman_encoding(symb2freq)
+    huff, layers = huffman_encoding(symb2freq)
     print(huff)
     
-    return [ ( p[0], symb2freq[p[0]], p[1], int(symb2freq[p[0]])*len(p[1]) ) for p in huff ]
+    return [ ( p[0], symb2freq[p[0]], p[1], int(symb2freq[p[0]])*len(p[1]) ) for p in huff ], layers
 
-txt = 'bbac'
-symb2freq = collections.Counter(txt)
-print(symb2freq)
-heap = [[wt, [sym, ""]] for sym, wt in symb2freq.items()]
-# transformation de la liste en tas pour facilier la manipulation des donnees
-heapify(heap)
-print(heap)
-tree = text2tree(txt)
+if __name__ == "__main__":
+
+    txt = 'ascii only!'
+    symb2freq = collections.Counter(txt)
+    print(symb2freq)
+    heap = [[wt, [sym, ""]] for sym, wt in symb2freq.items()]
+    heapify(heap)
+    print(heap)
+
+    tree = text2tree(txt)

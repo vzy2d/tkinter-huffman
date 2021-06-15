@@ -3,77 +3,11 @@ from tkinter import *
 from tkinter import ttk
 from tkinter import messagebox
 
-from heapq import heappush, heappop, heapify
-import collections
+import json
+import os
 
-
-def huffman_encoding(symb2freq):
-    """ Encodage des characteres selon la technique de Huffman.
-        Retourne une liste dont chaque element est une liste de la forme [caractere, code de Huffman] 
-        Utilisation d'un tas pour faciliter la manipulation des donnees. 
-    """
-    
-    heap = [[wt, [sym, ""]] for sym, wt in symb2freq.items()]
-    
-    # transformation de la liste en tas pour facilier la manipulation des donnees
-    heapify(heap)
-        
-    while len(heap) > 1:
-        
-        # la fonction heappop retourne l'element le plus leger d'un tas
-        # on recupere les 2 elements les plus legers (i.e. plus faible frequence d'occurence) pour former un nouvel arbre (le plus leger des deux elements est place sur la branche de gauche)
-        
-        left = heappop(heap)
-        rigth = heappop(heap)
-        
-        # encodage de Huffman: 0 pour la branche de gauche et 1 pour la branche de droite
-        # une paire est un tuple (symbole, code_de_Huffman)
-        
-        for pair in left[1:]:
-            pair[1] = '0' + pair[1]
-        
-        for pair in rigth[1:]:
-            pair[1] = '1' + pair[1]
-        
-        # l'arbre cree est ajoute au tas. Son poids est la somme des frequences d'occurence des caracteres qu'il contient
-
-        heappush( heap, [ left[0] + rigth[0] ] + left[1:] + rigth[1:] )
-
-    return sorted(heappop(heap)[1:], key=lambda p: (len(p[-1]), p))
-
-
-def text2tree(txt):
-    """ Retourne une liste de tuple ordonnée du poids le plus fort (plus forte probabilite d'occurence) au poids le plus faible.
-        Un element de liste contient un tuple de la forme (symbole, poids, code de Huffman). 
-    """
-    
-    symb2freq = collections.Counter(txt)
-    huff = huffman_encoding(symb2freq)
-    
-    return [ ( p[0], symb2freq[p[0]], p[1], int(symb2freq[p[0]])*len(p[1]) ) for p in huff ]
-
-
-
-
-BIN_HEX = {'0000':'0', '0001':'1', '0010':'2', '0011':'3', '0100':'4', '0101':'5',
-          '0110':'6', '0111':'7', '1000':'8', '1001':'9', '1010':'A', '1011':'B',
-          '1100':'C', '1101':'D', '1110':'E', '1111':'F'}
-
-def bin2hexa(binVal):
-    ''' Conversion d'une chaine de caractere binaire en hexastring '''
-    output = ""
-    bits = []
-    length = len(binVal)
-    if(length%4 != 0):
-        for x in range(4-(length%4)):
-            binVal += "0"
-            length +=1
-    for i in range(length//4):
-        bits.append(binVal[i*4:(4 + (i*4))])
-    for halfByte in bits:
-        output+= BIN_HEX[halfByte]
-    return output
-
+from HuffmanEncoding import text2tree
+from utils import bin2hexa
 
 class Application(Frame):
     """ GUI based-on Tkinter. """
@@ -81,35 +15,33 @@ class Application(Frame):
     def __init__(self, master=None):
         
         super().__init__(master)
+        self.master = master
         self.grid()
 
         # titre de l'application
         Label(master, text='La compression de Huffman', font="courier 14 bold").grid(row=0, columnspan=3, pady=(0,20))
 
-
-
-
-        # panel nord ouest
-        # l'utilisateur est invite a taper du texte
-        # pour le compresser avec la methode de Huffman, l'utilisateur doit appuyer sur le boutton
+        # 待编码内容输入
         ####################################
         
-        # label du panel
+        # 待编码字符串输入框标题
+        # label
         self.label_for_text  = Label(master, text ="Texte original" )
         self.label_for_text.grid(row=1, column=0, pady=(5,5))
 
+        # 待编码字符串输入框
         # widget text
         self.text = Text(master, width=50, height=10)
         self.text.insert(END, "ascii only!")
         self.text.grid(row=2, padx=10, pady=10)
 
+        # 编码按钮
         Button(master, text='Compresser le texte', command=self.compute_and_display).grid(row=3)
 
-        
+        # 测试按钮
+        self.button_draw_graph = Button(master, text='Draw graph', command=self.graph_window).grid(row=4)
 
-
-        # panel nord est
-        # les resultats du calcul de l'encodage selon Huffamn sont affiches sous forme de tableau (tree dans le vocabulaire tkinter)
+        # 编码结果 - 表格
         ##################################
 
         # label du panel
@@ -140,11 +72,7 @@ class Application(Frame):
         self.tree.grid(row=2, rowspan=2, column=1)
         ysb.grid(row=2, rowspan=2, column=2)
         
-
-
-
-        # panel sud est
-        # Conversion de chaque caractere du texte entre par l'utilisateur vers son code de Huffamn (texte binaire)
+        # 编码结果 - 二进制码流
         ##################################
 
         self.label_for_binary_text      = Label( master, width = 50, text = 'Text encode by Huffman')
@@ -153,11 +81,7 @@ class Application(Frame):
         self.text_binary = Text(master, width=50, height=10)
         self.text_binary.grid(row=5, column=1)
 
-
-
-
-        # panel sud ouest
-        # Conversion du texte du panel sud est (texte binaire) en hexastring pour constater la compression en espace
+        # 编码结果 - 十六进制
         ##################################
 
         self.label_for_compressed_text  = Label( master, width = 50, text = 'Text compresse')
@@ -166,6 +90,8 @@ class Application(Frame):
         self.text_compressed = Text(master, width=50, height=10)
         self.text_compressed.grid(row=5, column=0)
 
+        # 多窗口
+        self.flag_graph_window = IntVar(self.master, value=0)
 
 
     def compute_and_display(self):
@@ -180,7 +106,8 @@ class Application(Frame):
 
             self.label_for_text.config(text='Texte original in ASCII: {} Bytes'.format(len(text)))  
             
-            matrix = text2tree(text)
+            matrix, layers = text2tree(text)
+
             huffman = {}
             text_compressed_total_bits = 0
 
@@ -192,7 +119,6 @@ class Application(Frame):
                 # mise a jour de l'affichage de l'arbre avec les resultats du calcul
                 self.tree.insert('', 'end', values=row)
             
-
             # mise a jour de l'affichage du panel sud ouest avec le texte encode selon Huffamen et son label indiquant le nombre de caractere 
             
             self.text_binary.insert(END, ''.join([ huffman[char] for char in text]))
@@ -216,22 +142,110 @@ class Application(Frame):
             self.text_compressed.insert(END, bin2hexa(self.text_binary.get(1.0, 'end-1c')))
             self.label_for_compressed_text.config(text='Texte compresse: {} octets'.format(len(self.text_compressed.get(1.0, 'end-1c'))//2))
 
+            # save layer info
+            json_str = json.dumps(layers)
+            with open("log.json", 'w') as FILE:
+                FILE.write(json_str)
+
         else:
             # il a ete constate que certaines plateformes ne supportent pas les caracteres speciaux dans le champs texte !
             messagebox.showerror('Error', '要压缩的文本不能为空或包含特殊字符')
             self.text.insert(END, "仅支持ascii字符！")
+    
+    def draw_graph(self, layers):
+        nodes = layers.copy()
+
+        size_oval = 14
+        pos_init_node = [20, 30]
+        distance_first_layer = 50
+        distance_line_y = 50
+        distance_layers = 100
+
+        self.canvas.delete('all')
+        self.canvas.create_line(0, 5, 1920, 5, width=5)
+
+        tag_list = []
+
+        # def plot():
+        print(self.canvas.grid_info())
+        for elem in tag_list:
+            elem.destroy()
+        tag_list = []
+        for num_layer in range(len(layers)):
+            node_cnt = 0
+            for key in layers[num_layer]:
+                print(num_layer, key)
+                if num_layer is 0:
+                    x = pos_init_node[0]
+                    y = pos_init_node[1] + distance_first_layer * node_cnt
+                    self.canvas.create_oval(x - size_oval, y - size_oval, x + size_oval, y + size_oval, fill="yellow")
+                else:
+                    x = pos_init_node[0] + distance_layers * num_layer
+                    last_node_a = nodes[layers[num_layer][key][2][0]][layers[num_layer][key][2][1]]
+                    last_node_b = nodes[layers[num_layer][key][3][0]][layers[num_layer][key][3][1]]
+                    y = abs(last_node_a[1] + last_node_b[1])/2
+
+                    # self.canvas.create_oval(x - size_oval, y - size_oval, x + size_oval, y + size_oval, fill="yellow")
+
+                    # last_node_a 22222221
+                    #                    1
+                    #                    144444444 next_node
+                    #                    1
+                    # last_node_a 33333331
+                    self.canvas.create_line(x - distance_line_y, last_node_a[1], x - distance_line_y, last_node_b[1])    # line 1
+                    self.canvas.create_line(last_node_a[0], last_node_a[1], x - distance_line_y, last_node_a[1])    # line 2
+                    self.canvas.create_line(last_node_b[0], last_node_b[1], x - distance_line_y, last_node_b[1])    # line 3
+                    self.canvas.create_line(x - distance_line_y, y, x, y)    # line 4
+                nodes[num_layer][key] = [x, y]
+
+                if num_layer is 0:
+                    bg = "yellow"
+                else:
+                    bg = "white"
+                tag_list.append(Label(self.win_graph_master, text=str(key), bg=bg))
+                tag_list[len(tag_list) - 1].place(x=x-7, y=y-12)
+
+                node_cnt += 1
+    
+    def graph_window(self):
+        """ 
+        setting for second window
+        """
+        if os.path.exists("log.json"):
+            with open("log.json", 'r') as FILE:
+                layers = json.load(FILE)
+                if self.flag_graph_window.get()==0:
+                    self.flag_graph_window.set(1)
+                    # setting new window
+                    # w1 = myWindow(root, 'First Window', 1)
+                    self.win_graph_master = Toplevel(self.master, width=500, height=300)
+                    self.win_graph_master.title('graph')
+                    self.win_graph_master.attributes('-topmost', 1)
+
+                    # 编码结果 - 图
+                    ##################################
+                    self.canvas = Canvas(self.win_graph_master, bg="white", height=1080, width=1920)
+                    self.canvas.place(x=0, y=0)
+                    self.draw_graph(layers)
+                    # FIXME: AttributeError: 'NoneType' object has no attribute 'wait_window'
+                    self.button_draw_graph.wait_window(self.win_graph_master)
+                    self.flag_graph_window.set(0)
+        else:
+            print("log file not exist!")
+            return
 
 
 
-# tkinter 模块用于实现图形界面
-root = Tk()
-# 格式化主窗口
-root.config(bd=10)
-root.option_add("*Font", "courier")
-root.wm_title('Huffman')
-root.minsize(width=666, height=600)
-root.resizable(width=False, height=False)
 
-# 推出graprightque界面
-app = Application(master=root)
-app.mainloop()
+if __name__ == "__main__":
+    root = Tk()
+    # 格式化主窗口
+    root.config(bd=10)
+    root.option_add("*Font", "courier")
+    root.wm_title('Huffman')
+    root.minsize(width=666, height=600)
+    root.resizable(width=False, height=False)
+
+    # 推出graprightque界面
+    app = Application(master=root)
+    app.mainloop()
