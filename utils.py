@@ -5,7 +5,12 @@ BIN_HEX = {'0000':'0', '0001':'1', '0010':'2', '0011':'3', '0100':'4', '0101':'5
           '1100':'C', '1101':'D', '1110':'E', '1111':'F'}
 
 def bin2hexa(binVal):
-    ''' Conversion d'une chaine de caractere binaire en hexastring '''
+    """ 
+
+    Args:
+        
+    Returns: 
+    """
     output = ""
     bits = []
     length = len(binVal)

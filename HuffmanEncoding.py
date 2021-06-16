@@ -3,6 +3,12 @@ from heapq import heappush, heappop, heapify
 import collections
 
 def get_new_text(node):
+    """ 
+
+    Args:
+        
+    Returns: 
+    """
     new_text = ''
     if len(node) > 2:
         for i in range(1, len(node)):
@@ -13,9 +19,11 @@ def get_new_text(node):
 
 
 def huffman_encoding(symb2freq):
-    """ Encodage des characteres selon la technique de Huffman.
-        Retourne une liste dont chaque element est une liste de la forme [caractere, code de Huffman] 
-        Utilisation d'un tas pour faciliter la manipulation des donnees. 
+    """ 
+
+    Args:
+        
+    Returns: 
     """
     step = 0
     nodes = []
@@ -25,7 +33,7 @@ def huffman_encoding(symb2freq):
     
     heap = [[wt, [sym, ""]] for sym, wt in symb2freq.items()]
     
-    # transformation de la liste en tas pour facilier la manipulation des donnees
+    # transformation of the list into a heap
     heapify(heap)
     
     seq = sorted(heap, reverse=True)
@@ -33,7 +41,7 @@ def huffman_encoding(symb2freq):
     text_dict = dict()  # 记录节点所在层
     for i in range(len(seq)):
         layer[seq[i][1][0]] = [i,seq[i][0],None,None] #[No., Prob, next_node_a, next_node_b]
-        text_dict[seq[i][1][0]] = 0 # text belone to which layer
+        text_dict[seq[i][1][0]] = 0 # record text belone to which layer
     layers.append(layer.copy())
     
     layer.clear()
@@ -60,19 +68,19 @@ def huffman_encoding(symb2freq):
             pair[1] = '1' + pair[1]
         
         heappush( heap, [ left[0] + right[0] ] + left[1:] + right[1:] )
-        print(heap,'\n')
-    print(layers, len(layers))
     return sorted(heappop(heap)[1:], key=lambda p: (len(p[-1]), p)), layers
 
 
 def text2tree(txt):
-    """ Retourne une liste de tuple ordonnée du poids le plus fort (plus forte probabilite d'occurence) au poids le plus faible.
-        Un element de liste contient un tuple de la forme (symbole, poids, code de Huffman). 
+    """ 
+
+    Args:
+        
+    Returns: 
     """
     
     symb2freq = collections.Counter(txt)
     huff, layers = huffman_encoding(symb2freq)
-    print(huff)
     
     return [ ( p[0], symb2freq[p[0]], p[1], int(symb2freq[p[0]])*len(p[1]) ) for p in huff ], layers
 

@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 from tkinter import *
-from tkinter import ttk
-from tkinter import messagebox
-
+from tkinter import ttk,messagebox,filedialog
 import json
 import os
 
@@ -11,19 +9,27 @@ from utils import bin2hexa
 
 class Application(Frame):
     """ GUI based-on Tkinter. """
-
     def __init__(self, master=None):
         
         super().__init__(master)
         self.master = master
         self.grid()
 
-        # titre de l'application
-        Label(master, text='La compression de Huffman', font="courier 14 bold").grid(row=0, columnspan=3, pady=(0,20))
+        # Label(master, text='Huffman Coding', font="courier 14 bold").grid(row=0, columnspan=3, pady=(0,20))
 
         # 待编码内容输入
         ####################################
         
+        # TODO add button for read text from system's file explorer
+        Button(master, text='Read From File', command=self.read_text_from_file).grid(row=0, column=0, sticky=W)
+
+        # 编码按钮
+        Button(master, text='Encode', command=self.compute_and_display).grid(row=0, column=1, sticky=W)
+
+        # 绘图按钮
+        self.button_draw_graph = Button(master, text='Draw graph', command=self.graph_window)
+        self.button_draw_graph.grid(row=0, column=1, sticky=E)
+
         # 待编码字符串输入框标题
         # label
         self.label_for_text  = Label(master, text ="Texte original" )
@@ -31,43 +37,33 @@ class Application(Frame):
 
         # 待编码字符串输入框
         # widget text
-        self.text = Text(master, width=50, height=10)
+        self.text = Text(master, width=50, height=12.45)
         self.text.insert(END, "ascii only!")
         self.text.grid(row=2, padx=10, pady=10)
 
-        # 编码按钮
-        Button(master, text='Encode', command=self.compute_and_display).grid(row=3)
-        # TODO add button for read text from system's file explorer
-
-        # 绘图按钮
-        self.button_draw_graph = Button(master, text='Draw graph', command=self.graph_window)
-        self.button_draw_graph.grid(row=4)
-
         # 编码结果 - 表格
         ##################################
-
-        # label du panel
-        self.label_for_tree  = Label(master, text ="Details de l'encodage" )
+        self.label_for_tree  = Label(master, text ="Results" )
         self.label_for_tree.grid(row=1, column=1, pady=(5,5))
 
-        # creation et mise en forme du tableau
+        # table creation and formatting
         style = ttk.Style()
         style.configure("Treeview", font=('courier', 10))
         self.tree = ttk.Treeview(master, height=10)
         ysb = ttk.Scrollbar(master, orient='vertical', command=self.tree.yview)
         self.tree.configure(yscroll=ysb.set)
-        self.tree['show'] = 'headings' # ne pas afficher la premiere colonne incluse par defaut
+        self.tree['show'] = 'headings' # do not display the first column included by default
         
-        # definition des colonnes
-        self.tree["columns"]=("symbole", "frequence", "code", "total_bits")
+        # column definition
+        self.tree["columns"]=("symbol", "frequence", "code", "total_bits")
         
-        self.tree.column("symbole", width=100)
+        self.tree.column("symbol", width=100)
         self.tree.column("frequence", width=100)
         self.tree.column("code", width=200)
         self.tree.column("total_bits", width=100)
         
-        self.tree.heading("symbole", text="Symbole")
-        self.tree.heading("frequence", text="Fréquence")
+        self.tree.heading("symbol", text="Symbol")
+        self.tree.heading("frequence", text="frequence")
         self.tree.heading("code", text="Code")
         self.tree.heading("total_bits", text="Total bits")
         
@@ -77,7 +73,7 @@ class Application(Frame):
         # 编码结果 - 二进制码流
         ##################################
 
-        self.label_for_binary_text      = Label( master, width = 50, text = 'Text encode by Huffman')
+        self.label_for_binary_text = Label( master, width = 50, text = 'Text encoded by Huffman')
         self.label_for_binary_text.grid(row=4, column=1, pady=(25,10)) 
 
         self.text_binary = Text(master, width=50, height=10)
@@ -86,7 +82,7 @@ class Application(Frame):
         # 编码结果 - 十六进制
         ##################################
 
-        self.label_for_compressed_text  = Label( master, width = 50, text = 'Text compresse')
+        self.label_for_compressed_text  = Label( master, width = 50, text = 'Text compressed')
         self.label_for_compressed_text.grid(row=4, column=0, pady=(25,10))
 
         self.text_compressed = Text(master, width=50, height=10)
@@ -94,6 +90,25 @@ class Application(Frame):
 
         # 多窗口
         self.flag_graph_window = IntVar(self.master, value=0)
+
+    def read_text_from_file(self):
+        """ 
+
+        Args:
+            
+        Returns: 
+        """
+        # FolderPath = filedialog.askdirectory()
+        FilePath = filedialog.askopenfilename()
+        print(FilePath)
+        if os.path.exists(FilePath):
+            with open(FilePath, 'r') as FILE:
+                text = FILE.read()
+                if text:
+                    self.text.delete('1.0', END)
+                    self.text.insert(END, text)
+                else:
+                    messagebox.showerror('Error', '文件为空')
 
 
     def compute_and_display(self):
@@ -103,11 +118,10 @@ class Application(Frame):
             
         Returns: 
         """
-        # reset des vues affichant les resultats d'encodage
         self.tree.delete(*self.tree.get_children())
         self.text_compressed.delete('1.0', END)
         self.text_binary.delete('1.0', END)
-        text = self.text.get(1.0, 'end-1c') # peut etre vide si presence de caracteres speciaux sur certaines plateformes !
+        text = self.text.get(1.0, 'end-1c')
         
         if text:
 
@@ -119,20 +133,12 @@ class Application(Frame):
             text_compressed_total_bits = 0
 
             for row in matrix:
-                # creation d'un dictionnaire pour convertir facilement un caractere en son code de Huffman
                 huffman[row[0]] = row[2]
-                # cacul du nombre total de bits utilises pour encoder le texte selon Huffman
                 text_compressed_total_bits += row[3]
-                # mise a jour de l'affichage de l'arbre avec les resultats du calcul
                 self.tree.insert('', 'end', values=row)
-            
-            # mise a jour de l'affichage du panel sud ouest avec le texte encode selon Huffamen et son label indiquant le nombre de caractere 
             
             self.text_binary.insert(END, ''.join([ huffman[char] for char in text]))
             self.label_for_binary_text.config(text='Text encoded by Huffman: {} bits'.format(len(self.text_binary.get(1.0, 'end-1c'))))
-            
-
-            # surlignage des 2 premiers caracteres de Huffman pour aider a la comprehension de l'utilisateur
 
             char_1_huffman_len = len( huffman[ text[0] ] )
             char_2_huffman_len = len( huffman[ text[1] ] )
@@ -143,9 +149,6 @@ class Application(Frame):
             self.text_binary.tag_add("huffman_2", "1.{}".format(char_1_huffman_len), "1.{}".format(char_1_huffman_len+char_2_huffman_len))
             self.text_binary.tag_config("huffman_2", background="lightblue")
 
-
-            # mise a jour de l'affichage du panel sud ouest avec le texte compresse (coversion du texte binaire en texte hexadecimal)
-
             self.text_compressed.insert(END, bin2hexa(self.text_binary.get(1.0, 'end-1c')))
             self.label_for_compressed_text.config(text='Texte compresse: {} octets'.format(len(self.text_compressed.get(1.0, 'end-1c'))//2))
 
@@ -155,14 +158,13 @@ class Application(Frame):
                 FILE.write(json_str)
 
         else:
-            # il a ete constate que certaines plateformes ne supportent pas les caracteres speciaux dans le champs texte !
             messagebox.showerror('Error', '要压缩的文本不能为空或包含特殊字符')
-            self.text.insert(END, "仅支持ascii字符！")
+            self.text.insert(END, "ascii only！")
     
 
     def draw_graph(self, layers):
         """ Draw graph in second window
-
+            TODO add button for show 0/1 in the corner
         Args:
             layers
         Returns: 
