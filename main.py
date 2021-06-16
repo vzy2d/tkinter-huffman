@@ -36,10 +36,12 @@ class Application(Frame):
         self.text.grid(row=2, padx=10, pady=10)
 
         # 编码按钮
-        Button(master, text='Compresser le texte', command=self.compute_and_display).grid(row=3)
+        Button(master, text='Encode', command=self.compute_and_display).grid(row=3)
+        # TODO add button for read text from system's file explorer
 
-        # 测试按钮
-        self.button_draw_graph = Button(master, text='Draw graph', command=self.graph_window).grid(row=4)
+        # 绘图按钮
+        self.button_draw_graph = Button(master, text='Draw graph', command=self.graph_window)
+        self.button_draw_graph.grid(row=4)
 
         # 编码结果 - 表格
         ##################################
@@ -95,7 +97,12 @@ class Application(Frame):
 
 
     def compute_and_display(self):
-        
+        """ 
+
+        Args:
+            
+        Returns: 
+        """
         # reset des vues affichant les resultats d'encodage
         self.tree.delete(*self.tree.get_children())
         self.text_compressed.delete('1.0', END)
@@ -152,7 +159,14 @@ class Application(Frame):
             messagebox.showerror('Error', '要压缩的文本不能为空或包含特殊字符')
             self.text.insert(END, "仅支持ascii字符！")
     
+
     def draw_graph(self, layers):
+        """ Draw graph in second window
+
+        Args:
+            layers
+        Returns: 
+        """
         nodes = layers.copy()
 
         size_oval = 14
@@ -166,15 +180,12 @@ class Application(Frame):
 
         tag_list = []
 
-        # def plot():
-        print(self.canvas.grid_info())
         for elem in tag_list:
             elem.destroy()
         tag_list = []
         for num_layer in range(len(layers)):
             node_cnt = 0
             for key in layers[num_layer]:
-                print(num_layer, key)
                 if num_layer is 0:
                     x = pos_init_node[0]
                     y = pos_init_node[1] + distance_first_layer * node_cnt
@@ -187,6 +198,7 @@ class Application(Frame):
 
                     # self.canvas.create_oval(x - size_oval, y - size_oval, x + size_oval, y + size_oval, fill="yellow")
 
+                    # 绘制连线
                     # last_node_a 22222221
                     #                    1
                     #                    144444444 next_node
@@ -207,17 +219,21 @@ class Application(Frame):
 
                 node_cnt += 1
     
+    # TODO implement second window by class. ref: https://www.cnblogs.com/hhh5460/p/6664021.html
     def graph_window(self):
         """ 
-        setting for second window
+
+        Args:
+            
+        Returns: 
         """
         if os.path.exists("log.json"):
             with open("log.json", 'r') as FILE:
                 layers = json.load(FILE)
                 if self.flag_graph_window.get()==0:
                     self.flag_graph_window.set(1)
+                    
                     # setting new window
-                    # w1 = myWindow(root, 'First Window', 1)
                     self.win_graph_master = Toplevel(self.master, width=500, height=300)
                     self.win_graph_master.title('graph')
                     self.win_graph_master.attributes('-topmost', 1)
@@ -227,7 +243,7 @@ class Application(Frame):
                     self.canvas = Canvas(self.win_graph_master, bg="white", height=1080, width=1920)
                     self.canvas.place(x=0, y=0)
                     self.draw_graph(layers)
-                    # FIXME: AttributeError: 'NoneType' object has no attribute 'wait_window'
+
                     self.button_draw_graph.wait_window(self.win_graph_master)
                     self.flag_graph_window.set(0)
         else:
