@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from tkinter import *
 from tkinter import ttk,messagebox,filedialog
+import copy
 import json
 import os
 
@@ -9,10 +10,11 @@ from utils import bin2hexa
 
 class Application(Frame):
     """ GUI based-on Tkinter. """
-    def __init__(self, master=None):
+    def __init__(self, master=None, default_text = '11100002234567'):
         
         super().__init__(master)
         self.master = master
+        self.default_text = default_text
         self.grid()
 
         # Label(master, text='Huffman Coding', font="courier 14 bold").grid(row=0, columnspan=3, pady=(0,20))
@@ -38,7 +40,7 @@ class Application(Frame):
         # 待编码字符串输入框
         # widget text
         self.text = Text(master, width=50, height=12.45)
-        self.text.insert(END, "ascii only!")
+        self.text.insert(END, self.default_text)
         self.text.grid(row=2, padx=10, pady=10)
 
         # 编码结果 - 表格
@@ -50,8 +52,6 @@ class Application(Frame):
         style = ttk.Style()
         style.configure("Treeview", font=('courier', 10))
         self.tree = ttk.Treeview(master, height=10)
-        ysb = ttk.Scrollbar(master, orient='vertical', command=self.tree.yview)
-        self.tree.configure(yscroll=ysb.set)
         self.tree['show'] = 'headings' # do not display the first column included by default
         
         # column definition
@@ -63,12 +63,11 @@ class Application(Frame):
         self.tree.column("total_bits", width=100)
         
         self.tree.heading("symbol", text="Symbol")
-        self.tree.heading("frequence", text="frequence")
+        self.tree.heading("frequence", text="Frequence")
         self.tree.heading("code", text="Code")
         self.tree.heading("total_bits", text="Total bits")
         
         self.tree.grid(row=2, rowspan=2, column=1)
-        ysb.grid(row=2, rowspan=2, column=2)
         
         # 编码结果 - 二进制码流
         ##################################
@@ -100,7 +99,6 @@ class Application(Frame):
         """
         # FolderPath = filedialog.askdirectory()
         FilePath = filedialog.askopenfilename()
-        print(FilePath)
         if os.path.exists(FilePath):
             with open(FilePath, 'r') as FILE:
                 text = FILE.read()
@@ -125,12 +123,14 @@ class Application(Frame):
         
         if text:
 
-            self.label_for_text.config(text='Texte original in ASCII: {} Bytes'.format(len(text)))  
+            self.label_for_text.config(text='Text original in ASCII: {} Bytes'.format(len(text)))  
             
             matrix, layers = text2tree(text)
 
             huffman = {}
             text_compressed_total_bits = 0
+
+            matrix.sort(key=lambda p:list(layers[0].keys()).index(p[0]))
 
             for row in matrix:
                 huffman[row[0]] = row[2]
@@ -150,7 +150,7 @@ class Application(Frame):
             self.text_binary.tag_config("huffman_2", background="lightblue")
 
             self.text_compressed.insert(END, bin2hexa(self.text_binary.get(1.0, 'end-1c')))
-            self.label_for_compressed_text.config(text='Texte compresse: {} octets'.format(len(self.text_compressed.get(1.0, 'end-1c'))//2))
+            self.label_for_compressed_text.config(text='Text compressed: {} Bytes'.format(len(self.text_compressed.get(1.0, 'end-1c'))//2))
 
             # save layer info
             json_str = json.dumps(layers)
@@ -169,7 +169,7 @@ class Application(Frame):
             layers
         Returns: 
         """
-        nodes = layers.copy()
+        nodes = copy.deepcopy(layers)
 
         size_oval = 14
         pos_init_node = [20, 30]
@@ -188,7 +188,7 @@ class Application(Frame):
         for num_layer in range(len(layers)):
             node_cnt = 0
             for key in layers[num_layer]:
-                if num_layer is 0:
+                if num_layer == 0:
                     x = pos_init_node[0]
                     y = pos_init_node[1] + distance_first_layer * node_cnt
                     self.canvas.create_oval(x - size_oval, y - size_oval, x + size_oval, y + size_oval, fill="yellow")
@@ -212,7 +212,7 @@ class Application(Frame):
                     self.canvas.create_line(x - distance_line_y, y, x, y)    # line 4
                 nodes[num_layer][key] = [x, y]
 
-                if num_layer is 0:
+                if num_layer == 0:
                     bg = "yellow"
                 else:
                     bg = "white"
@@ -236,7 +236,9 @@ class Application(Frame):
                     self.flag_graph_window.set(1)
                     
                     # setting new window
-                    self.win_graph_master = Toplevel(self.master, width=500, height=300)
+                    window_width = min(1200, len(layers) * 100 + 10)
+                    window_height = min(800, len(layers[0]) * 50 + 30-20)
+                    self.win_graph_master = Toplevel(self.master, width=window_width, height=window_height)
                     self.win_graph_master.title('graph')
                     self.win_graph_master.attributes('-topmost', 1)
 
@@ -265,5 +267,9 @@ if __name__ == "__main__":
     root.resizable(width=False, height=False)
 
     # 推出graprightque界面
-    app = Application(master=root)
+    txt =  'HHHHDDDDDEEEEEEGGGGGGGFFFFFFFFFFAAAAAAAAAABBBBBBBBBBBBBBBBBBCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC'
+    # txt =  '00001112234567'
+    # txt =  'statetree'
+
+    app = Application(master=root, default_text=txt)
     app.mainloop()
