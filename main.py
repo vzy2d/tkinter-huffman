@@ -6,18 +6,15 @@ import json
 import os
 
 from HuffmanEncoding import text2tree
-from utils import bin2hexa
+from utils import bin2hex
 
 class Application(Frame):
     """ GUI based-on Tkinter. """
     def __init__(self, master=None, default_text = '11100002234567'):
-        
         super().__init__(master)
         self.master = master
         self.default_text = default_text
         self.grid()
-
-        # Label(master, text='Huffman Coding', font="courier 14 bold").grid(row=0, columnspan=3, pady=(0,20))
 
         # 待编码内容输入
         ####################################
@@ -43,7 +40,7 @@ class Application(Frame):
         self.text.insert(END, self.default_text)
         self.text.grid(row=2, padx=10, pady=10)
 
-        # 编码结果 - 表格
+        # 编码结果显示框 - 表格
         ##################################
         self.label_for_tree  = Label(master, text ="Results" )
         self.label_for_tree.grid(row=1, column=1, pady=(5,5))
@@ -69,7 +66,7 @@ class Application(Frame):
         
         self.tree.grid(row=2, rowspan=2, column=1)
         
-        # 编码结果 - 二进制码流
+        # 编码结果显示框 - 二进制码流
         ##################################
 
         self.label_for_binary_text = Label( master, width = 50, text = 'Text encoded by Huffman')
@@ -78,7 +75,7 @@ class Application(Frame):
         self.text_binary = Text(master, width=50, height=10)
         self.text_binary.grid(row=5, column=1)
 
-        # 编码结果 - 十六进制
+        # 编码结果显示框 - 十六进制
         ##################################
 
         self.label_for_compressed_text  = Label( master, width = 50, text = 'Text compressed')
@@ -92,10 +89,7 @@ class Application(Frame):
 
     def read_text_from_file(self):
         """ 
-
-        Args:
-            
-        Returns: 
+        'Read From File'按钮回调函数，用于从文件中读取待编码字符串
         """
         # FolderPath = filedialog.askdirectory()
         FilePath = filedialog.askopenfilename()
@@ -108,13 +102,9 @@ class Application(Frame):
                 else:
                     messagebox.showerror('Error', '文件为空')
 
-
     def compute_and_display(self):
         """ 
-
-        Args:
-            
-        Returns: 
+        编码并显示编码结果
         """
         self.tree.delete(*self.tree.get_children())
         self.text_compressed.delete('1.0', END)
@@ -140,16 +130,18 @@ class Application(Frame):
             self.text_binary.insert(END, ''.join([ huffman[char] for char in text]))
             self.label_for_binary_text.config(text='Text encoded by Huffman: {} bits'.format(len(self.text_binary.get(1.0, 'end-1c'))))
 
-            char_1_huffman_len = len( huffman[ text[0] ] )
-            char_2_huffman_len = len( huffman[ text[1] ] )
+            # 二进制码流显示着色
+            cnt = 0
+            for i in range(0,2):
+                char_huffman_len = len( huffman[ text[i] ] )
+                self.text_binary.tag_add("huffman_{}".format(i), "1.{}".format(cnt), "1.{}".format(cnt+char_huffman_len))
+                if i % 2:
+                    self.text_binary.tag_config("huffman_{}".format(i), background="gray")
+                else:
+                    self.text_binary.tag_config("huffman_{}".format(i), background="lightblue")
+                cnt += char_huffman_len
 
-            self.text_binary.tag_add("huffman_1", "1.0", "1.{}".format(char_1_huffman_len))
-            self.text_binary.tag_config("huffman_1", background="yellow")
-
-            self.text_binary.tag_add("huffman_2", "1.{}".format(char_1_huffman_len), "1.{}".format(char_1_huffman_len+char_2_huffman_len))
-            self.text_binary.tag_config("huffman_2", background="lightblue")
-
-            self.text_compressed.insert(END, bin2hexa(self.text_binary.get(1.0, 'end-1c')))
+            self.text_compressed.insert(END, bin2hex(self.text_binary.get(1.0, 'end-1c')))
             self.label_for_compressed_text.config(text='Text compressed: {} Bytes'.format(len(self.text_compressed.get(1.0, 'end-1c'))//2))
 
             # save layer info
@@ -221,13 +213,9 @@ class Application(Frame):
 
                 node_cnt += 1
     
-    # TODO implement second window by class. ref: https://www.cnblogs.com/hhh5460/p/6664021.html
     def graph_window(self):
         """ 
-
-        Args:
-            
-        Returns: 
+        绘制第二窗口用于显示计算图
         """
         if os.path.exists("log.json"):
             with open("log.json", 'r') as FILE:
@@ -259,7 +247,6 @@ class Application(Frame):
 
 if __name__ == "__main__":
     root = Tk()
-    # 格式化主窗口
     root.config(bd=10)
     root.option_add("*Font", "courier")
     root.wm_title('Huffman')
